@@ -362,6 +362,7 @@ ru:{menuQuick:"⚡ Быстрый ввод",menuNew:"➕ Новая операц
   rOverBudget:"Превышен бюджет по",rOf:"из",rReceived:"Получено:",rMonthBalance:"Баланс месяца:",
   weekdays:["Пн","Вт","Ср","Чт","Пт","Сб","Вс"],heatmap:"Календарь трат",
   menuGoals:"🐷 Цели",goalsTitle:"Цели накоплений",goalsSection:"Цели накоплений",goalName:"Название цели",goalNamePh:"Отпуск",goalTarget:"Сумма цели",goalCreate:"Создать цель",goalAdd:"Пополнить",goalAddPh:"сумма",goalDelete:"Удалить",goalOf:"из",goalEnterName:"Введите название",goalEnterTarget:"Введите сумму цели",grpAdd:"Добавить",grpAnalytics:"Аналитика",grpSettings:"Настройки",secSections:"Разделы",navOverview:"📊 Обзор",navRates:"💱 Курсы валют",ratesTitle:"Курсы валют",ratesRefresh:"Обновить",ratesUpdating:"Обновление…",ratesAsOf:"на",ratesOfficialNote:"Официальный курс ЦБ РУз (не покупка/продажа в обменниках)",ratesError:"Не удалось обновить онлайн — показаны сохранённые данные.",ratesNever:"Курсы ещё не загружены. Нажмите «Обновить».",ratesHostHint:"Если онлайн-обновление не работает из локального файла — это ограничение браузера (CORS). Заработает, когда выложишь сайт онлайн.",colCcy:"Валюта",colRate:"Курс (сум)",colChange:"Δ за день",
+  convTitle:"Конвертер",convFrom:"Из",convTo:"В",convAmtPh:"Сумма",convNoRates:"Загрузите курсы, нажав «Обновить»",
   currency:"сум",months:RU_MONTHS},
 en:{menuQuick:"⚡ Quick add",menuNew:"➕ New entry",menuBudget:"🎯 Budgets",menuStats:"💰 Summary",menuData:"💾 Data",
   themeDark:"🌙 Dark theme",themeLight:"☀️ Light theme",overview:"Overview",tagline:"Personal finance · Uzbek som",
@@ -384,6 +385,7 @@ en:{menuQuick:"⚡ Quick add",menuNew:"➕ New entry",menuBudget:"🎯 Budgets",
   rOverBudget:"Budget exceeded for",rOf:"of",rReceived:"Received:",rMonthBalance:"Month balance:",
   weekdays:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],heatmap:"Spending calendar",
   menuGoals:"🐷 Goals",goalsTitle:"Savings goals",goalsSection:"Savings goals",goalName:"Goal name",goalNamePh:"Vacation",goalTarget:"Target amount",goalCreate:"Create goal",goalAdd:"Add",goalAddPh:"amount",goalDelete:"Delete",goalOf:"of",goalEnterName:"Enter a name",goalEnterTarget:"Enter target amount",grpAdd:"Add",grpAnalytics:"Analytics",grpSettings:"Settings",secSections:"Sections",navOverview:"📊 Overview",navRates:"💱 Exchange rates",ratesTitle:"Exchange rates",ratesRefresh:"Refresh",ratesUpdating:"Updating…",ratesAsOf:"as of",ratesOfficialNote:"Official CBU rate (not the buy/sell rate at exchange offices)",ratesError:"Couldn't update online — showing saved data.",ratesNever:"Rates not loaded yet. Tap Refresh.",ratesHostHint:"If online updates don't work from a local file, that's a browser limit (CORS). It'll work once the site is hosted online.",colCcy:"Currency",colRate:"Rate (UZS)",colChange:"Δ day",
+  convTitle:"Converter",convFrom:"From",convTo:"To",convAmtPh:"Amount",convNoRates:"Load rates by clicking Refresh",
   currency:"UZS",months:EN_MONTHS}
 };
 function t(k){ return T[state.lang][k]; }
@@ -587,7 +589,7 @@ function renderGoals(){
   }
   wrap.innerHTML=`<div class="section">${t('goalsSection')}</div><div class="card pad fade" style="padding-bottom:.4rem">${bars}</div><div class="spacer"></div>`;
 }
-const MAJOR=['USD','EUR','RUB','GBP','KZT','CNY','JPY','TRY','KRW','AED'];
+const MAJOR=['USD','EUR','JPY','GBP','CNY','KZT','RUB'];
 function fmtRate(v){
   const n=parseFloat(v); if(isNaN(n)) return v;
   return n.toLocaleString(state.lang==='en'?'en-US':'ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -607,18 +609,23 @@ async function fetchRates(){
 }
 function renderRates(){
   const wrap=document.getElementById('viewRates'), D=T[state.lang];
+  const convCcys=['UZS',...MAJOR];
+  const ccyOpts=convCcys.map(c=>`<option value="${c}">${c}</option>`).join('');
   if(!state.rates){
-    wrap.innerHTML=`<div class="card pad fade">
-      <button class="btn-primary" id="rt_refresh" style="width:auto;padding:9px 16px">${D.ratesRefresh}</button>
-      <p style="color:var(--soft);font-size:0.9rem;margin-top:14px">${D.ratesNever}</p>
-      ${state._ratesError?`<p style="color:var(--mute);font-size:0.8rem;margin-top:8px">${D.ratesHostHint}</p>`:''}</div>`;
+    wrap.innerHTML=`
+      <div class="card pad fade" style="margin-bottom:14px">
+        <div class="section" style="margin-bottom:8px">${D.convTitle}</div>
+        <p style="color:var(--mute);font-size:0.88rem">${D.convNoRates}</p>
+      </div>
+      <div class="card pad fade">
+        <button class="btn-primary" id="rt_refresh" style="width:auto;padding:9px 16px">${D.ratesRefresh}</button>
+        <p style="color:var(--soft);font-size:0.9rem;margin-top:14px">${D.ratesNever}</p>
+        ${state._ratesError?`<p style="color:var(--mute);font-size:0.8rem;margin-top:8px">${D.ratesHostHint}</p>`:''}</div>`;
     document.getElementById('rt_refresh').onclick=fetchRates; return;
   }
-  const list=[...state.rates.list].sort((a,b)=>{
-    const ia=MAJOR.indexOf(a.ccy), ib=MAJOR.indexOf(b.ccy);
-    if(ia!==-1||ib!==-1){ if(ia===-1)return 1; if(ib===-1)return -1; return ia-ib; }
-    return a.ccy<b.ccy?-1:1;
-  });
+  const list=[...state.rates.list]
+    .filter(c=>MAJOR.includes(c.ccy))
+    .sort((a,b)=>MAJOR.indexOf(a.ccy)-MAJOR.indexOf(b.ccy));
   const rows=list.map(c=>{
     const diff=parseFloat(c.diff)||0;
     const dc=diff>0?'var(--green)':diff<0?'var(--red)':'var(--mute)';
@@ -634,11 +641,55 @@ function renderRates(){
       <button class="btn-primary" id="rt_refresh" style="width:auto;padding:9px 16px">${D.ratesRefresh}</button>
       <span style="color:var(--mute);font-size:0.82rem">${D.ratesAsOf} ${state.rates.date||''}</span>
       ${state._ratesError?`<span style="color:var(--red);font-size:0.8rem">${D.ratesError}</span>`:''}</div>
+    <div class="card pad fade" style="margin-bottom:14px">
+      <div class="section" style="margin-bottom:14px">${D.convTitle}</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:0.78rem;color:var(--soft);font-weight:500;margin-bottom:5px">${D.convFrom}</div>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="cv_amt" class="num" placeholder="${D.convAmtPh}" style="min-width:0;flex:1">
+            <select id="cv_from" style="width:86px">${ccyOpts}</select>
+          </div>
+        </div>
+        <div style="color:var(--mute);font-size:1rem;padding-bottom:10px">→</div>
+        <div style="flex:1;min-width:120px">
+          <div style="font-size:0.78rem;color:var(--soft);font-weight:500;margin-bottom:5px">${D.convTo}</div>
+          <select id="cv_to" style="width:100%">${ccyOpts}</select>
+        </div>
+      </div>
+      <div id="cv_result" style="margin-top:14px;min-height:2rem"></div>
+    </div>
     <div class="card fade"><table><thead><tr>
       <th>${D.colCcy}</th><th class="right">${D.colRate}</th><th class="right">${D.colChange}</th>
     </tr></thead><tbody>${rows}</tbody></table></div>
     <p style="color:var(--mute);font-size:0.8rem;margin-top:12px">ℹ️ ${D.ratesOfficialNote}</p>`;
+  document.getElementById('cv_from').value='USD';
+  document.getElementById('cv_to').value='UZS';
   document.getElementById('rt_refresh').onclick=fetchRates;
+  const rateOf=(ccy)=>{
+    if(ccy==='UZS') return 1;
+    const c=state.rates.list.find(x=>x.ccy===ccy);
+    return c?parseFloat(c.rate)/parseFloat(c.nominal):null;
+  };
+  const calcConv=()=>{
+    const raw=document.getElementById('cv_amt').value.replace(/[\s,]/g,'');
+    const amount=parseFloat(raw);
+    const res=document.getElementById('cv_result');
+    const from=document.getElementById('cv_from').value;
+    const to=document.getElementById('cv_to').value;
+    if(!amount||amount<=0){res.innerHTML='';return;}
+    const rFrom=rateOf(from), rTo=rateOf(to);
+    if(rFrom==null||rTo==null){res.innerHTML='';return;}
+    const result=amount*rFrom/rTo;
+    const decimals=to==='UZS'?0:(result<0.01?6:result<1?4:2);
+    const loc=state.lang==='en'?'en-US':'ru-RU';
+    const fmtRes=(n)=>n.toLocaleString(loc,{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
+    const amtDisplay=amount.toLocaleString(loc);
+    res.innerHTML=`<span style="font-size:0.76rem;color:var(--mute);display:block;margin-bottom:3px">${amtDisplay} ${from} =</span><span class="num" style="font-size:1.45rem;font-weight:700;color:var(--accent)">${fmtRes(result)}</span> <span style="color:var(--soft);font-size:0.9rem;font-weight:500">${to}</span>`;
+  };
+  document.getElementById('cv_amt').oninput=calcConv;
+  document.getElementById('cv_from').onchange=calcConv;
+  document.getElementById('cv_to').onchange=calcConv;
 }
 function renderTable(view){
   const q=state.search.trim().toLowerCase();
